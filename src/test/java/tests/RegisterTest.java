@@ -1,60 +1,75 @@
 package tests;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
+import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
-import org.junit.After;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import pageobject.ConstructorPage;
+import pageobject.LoginPage;
+import pageobject.MainPage;
 import pageobject.RegisterPage;
+import utils.Constants;
 
-import java.time.Duration;
 
 public class RegisterTest extends BaseTest {
-    private WebDriver driver;
+    private ConstructorPage constructorPage;
+    private LoginPage loginPage;
+    private MainPage mainPage;
     private RegisterPage registerPage;
 
-    @Before
-    public void setUp() {
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
-        driver.get("https://stellarburgers.education-services.ru/register");
+    String name = RandomStringUtils.randomAlphanumeric(10);
+    String email = RandomStringUtils.randomAlphanumeric(7) + "@gufum.com";
+    String correctPassword = RandomStringUtils.randomAlphanumeric(6);
+    String wrongPassword = RandomStringUtils.randomAlphanumeric(5);
+
+    @Test
+    @DisplayName("позитивный тест на успешную регистрацию пользователя")
+    @Description("Позитивный тест на создание пользователя с заполненными полями")
+    public void successfulRegistrationTest() {
+        //вход на главную пейджу и клик личный кабинет
+        constructorPage = new ConstructorPage(driver);
+        constructorPage.waitForPersonalAccountButton();
+        constructorPage.enterPersonalAccountButton();
+        //переход по кнопке зарегистрироваться
+        loginPage = new LoginPage(driver);
+        loginPage.waitForPageLoad();
+        loginPage.clickRegistrationLink();
+        //заполнение формы регистрации
         registerPage = new RegisterPage(driver);
+        registerPage.waitForPageLoad();
+        registerPage.fillInRegistrationForm(name, email, correctPassword);
+        //ждем перехода на главную после регистрации
+        loginPage = new LoginPage(driver);
+        loginPage.waitForPageLoad();
+        Assert.assertEquals(Constants.LOGIN_PAGE, driver.getCurrentUrl());
+        //вводим данные с которыми зарегистрировались
+        loginPage.userDataEntry(email, correctPassword);
+        loginPage.clickEnterButton();
+        constructorPage.waitForPersonalAccountButton();
+        //переходим в профиль
+        constructorPage.enterPersonalAccountButton();
+        mainPage = new MainPage(driver);
+        mainPage.waitProfilePageLoad();
+        //проверяем данные
+        Assert.assertEquals(name, mainPage.getNameText());
+        Assert.assertEquals("Email не совпадает (игнорируя регистр)", email.toLowerCase(), mainPage.getEmailText().toLowerCase());
     }
 
     @Test
-    @DisplayName("Успешная регистрация")
-    public void successfulRegister() {
-        String email = "user" + System.currentTimeMillis() + "@mail.ru";
-        registerPage.register("Zhanna", email, "123456");
-
-        // Ждём, пока откроется страница логина
-        new WebDriverWait(driver, Duration.ofSeconds(5))
-                .until(ExpectedConditions.urlContains("/login"));
-
-        Assert.assertTrue("После регистрации не открылся экран логина",
-                driver.getCurrentUrl().contains("/login"));
-    }
-
-    @Test
-    @DisplayName("Ошибка при коротком пароле")
-    public void registerWithShortPasswordShowsError() {
-        String email = "user" + System.currentTimeMillis() + "@mail.ru";
-        registerPage.register("Zhanna", email, "123");
-
-        Assert.assertTrue("Сообщение об ошибке не отображается",
-                registerPage.isPasswordErrorVisible());
-    }
-
-    @After
-    public void tearDown() {
-        if (driver != null) {
-            driver.quit();
-        }
+    @DisplayName("Проверка на невозможность создание пользователя с некорректным паролем")
+    @Description("Негативный тест на невозможность создания пользователя с 5 значным паролем")
+    public void errorPasswordTest() {
+        constructorPage = new ConstructorPage(driver);
+        constructorPage.waitForPersonalAccountButton();
+        constructorPage.enterPersonalAccountButton();
+        loginPage = new LoginPage(driver);
+        loginPage.waitForPageLoad();
+        loginPage.clickRegistrationLink();
+        registerPage = new RegisterPage(driver);
+        registerPage.waitForPageLoad();
+        registerPage.fillInRegistrationForm(name, email, wrongPassword);
+        Assert.assertEquals("Некорректный пароль", registerPage.getPasswordFieldErrorText());
+        Assert.assertEquals(Constants.REGISTER_PAGE, driver.getCurrentUrl());
     }
 }

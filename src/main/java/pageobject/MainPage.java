@@ -1,33 +1,37 @@
 package pageobject;
 
+import io.qameta.allure.Step;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
 
 public class MainPage {
-    private WebDriver driver;
-    private final By loginButton = By.xpath("//button[contains(text(),'Войти')]");
-    private final By accountButton = By.xpath("//p[text()='Личный Кабинет']");
-    private final By constructorButton = By.xpath("//p[text()='Конструктор']");
-    private final By logoButton = By.className("AppHeader_header__logo__2D0X2");
+    WebDriver driver;
 
     public MainPage(WebDriver driver) {
+
         this.driver = driver;
     }
 
-    public void clickLoginButton() {
-        driver.findElement(loginButton).click();
+    private final By profileTextLocator = By.xpath(".//*[contains(text(), 'изменить свои персональные данные')]");
+    private final By nameField = By.xpath(".//li[1]//input");
+    private final By emailField = By.xpath(".//li[2]//input");
+
+    @Step("Ожидание загрузки страницы профиля")
+    public void waitProfilePageLoad() {
+        new WebDriverWait(driver, Duration.ofSeconds(15)).until(ExpectedConditions.visibilityOfElementLocated(profileTextLocator));
     }
 
-    public By clickAccountButton() {
-        driver.findElement(accountButton).click();
-        return null;
+    @Step("Получение значения поля «Email»")
+    public String getEmailText() {
+        return driver.findElement(emailField).getAttribute("value");
     }
 
-    public void clickConstructorButton() {
-        driver.findElement(constructorButton).click();
-    }
-
-    public void clickLogo() {
-        driver.findElement(logoButton).click();
+    @Step("Получение значения поля «Имя»")
+    public String getNameText() {
+        return driver.findElement(nameField).getAttribute("value");
     }
 }
