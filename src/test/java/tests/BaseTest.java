@@ -1,19 +1,18 @@
 package tests;
 
-import driver.DriverFactory;
+import utils.DriverFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.openqa.selenium.WebDriver;
+import utils.Constants;
 
-public abstract class BaseTest {
+public class BaseTest {
     protected WebDriver driver;
 
     @Before
     public void setUp() {
-        // Читаем параметр браузера из системного свойства
-        String browser = System.getProperty("browser", "chrome");
-        driver = DriverFactory.createDriver(browser);
-        driver.get("https://stellarburgers.education-services.ru/");
+        driver = DriverFactory.getNewDriver();
+        driver.get(Constants.BASE_URL);
     }
 
     @After
